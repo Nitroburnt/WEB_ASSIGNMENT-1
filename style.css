@@ -92,6 +92,59 @@ h2 {
     color: #2c3e50;
 }
 
+/* Landing Hero */
+.landing-hero {
+    background: linear-gradient(120deg, #fff 0%, #fff5f3 55%, #f2fff8 100%);
+    border: 1px solid #f2d2cc;
+    border-radius: 14px;
+    padding: 2.4rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 20px rgba(44, 62, 80, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.landing-content {
+    flex: 1;
+}
+
+.landing-badge {
+    display: inline-block;
+    background-color: #e74c3c;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    margin-bottom: 0.9rem;
+}
+
+.landing-hero h1 {
+    color: #2c3e50;
+    font-size: 2.35rem;
+    line-height: 1.2;
+    margin-bottom: 0.65rem;
+}
+
+.landing-subtext {
+    color: #5d6d7e;
+    max-width: 650px;
+    font-size: 1.05rem;
+}
+
+.landing-image {
+    width: 170px;
+    height: 170px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 5px solid #ffffff;
+    box-shadow: 0 10px 20px rgba(231, 76, 60, 0.25);
+}
+
 /* Grid Layout */
 .card-grid {
     display: flex;
@@ -195,6 +248,41 @@ h2 {
     font-size: 1.1rem;
 }
 
+/* Login Page */
+.login-container {
+    min-height: calc(100vh - 120px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: #fff;
+    width: 100%;
+    max-width: 460px;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+.login-card h2 {
+    margin-bottom: 1.25rem;
+    text-align: center;
+}
+
+.login-form .form-group {
+    margin-bottom: 1.25rem;
+}
+
+.login-error {
+    min-height: 1.4rem;
+    margin-top: -0.5rem;
+    margin-bottom: 0.75rem;
+    color: #c0392b;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
 /* Table */
 .table-responsive {
     overflow-x: auto;
@@ -294,6 +382,18 @@ h2 {
 
 /* Responsive Media Queries */
 @media (max-width: 768px) {
+    .landing-hero {
+        padding: 1.4rem;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .landing-hero h1 {
+        font-size: 1.55rem;
+    }
+    .landing-image {
+        width: 110px;
+        height: 110px;
+    }
     .card-grid {
         flex-direction: column;
     }
