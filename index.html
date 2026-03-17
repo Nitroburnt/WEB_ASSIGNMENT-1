@@ -1,93 +1,35 @@
-<!-- trigger -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Food Delivery</title>
+    <title>QuickBite Login</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3075/3075977.png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo" id="logo-link">QuickBite</div>
-        <ul class="nav-links">
-            <li><a href="#" id="home-link">Restaurants</a></li>
-            <li><button id="cart-btn" class="cart-btn">Cart (<span id="cart-count">0</span>)</button></li>
-        </ul>
+        <div class="logo">QuickBite</div>
     </nav>
 
-    <main class="container">
-        <!-- Restaurants View -->
-        <section id="restaurants-view" class="view active">
-            <h2>Popular Restaurants</h2>
-            <div id="restaurants-container" class="card-grid">
-                <!-- Restaurant cards dynamically injected here -->
-            </div>
-        </section>
-
-        <!-- Menu View -->
-        <section id="menu-view" class="view">
-            <button id="back-btn" class="btn-secondary">&larr; Back to Restaurants</button>
-            <h2 id="restaurant-name-title">Menu</h2>
-            <div id="menu-container" class="card-grid">
-                <!-- Menu items dynamically injected here -->
-            </div>
-        </section>
-
-        <!-- Cart & Checkout View -->
-        <section id="cart-view" class="view">
-            <h2>Your Cart</h2>
-            <div id="cart-content">
-                <div class="table-responsive">
-                    <table class="cart-table">
-                        <thead>
-                            <tr>
-                                <th>Item Name</th>
-                                <th>Price</th>
-                                <th>Quantity</th>
-                                <th>Subtotal</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cart-tbody">
-                            <!-- Cart items dynamically injected here -->
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="3" class="text-right"><strong>Total Cost:</strong></td>
-                                <td colspan="2"><strong>₹<span id="cart-total">0.00</span></strong></td>
-                            </tr>
-                        </tfoot>
-                    </table>
+    <main class="container login-container">
+        <section class="login-card">
+            <h2>Sign In</h2>
+            <form id="login-form" class="login-form" action="home.html" method="get" novalidate>
+                <div class="form-group">
+                    <label for="username">User Name</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your user name" aria-describedby="login-error">
                 </div>
-
-                <div class="checkout-form-container">
-                    <h3>Delivery Details</h3>
-                    <form id="checkout-form">
-                        <div class="form-group">
-                            <label for="customer-name">Full Name</label>
-                            <input type="text" id="customer-name" name="customer-name" required placeholder="Aarav Sharma">
-                        </div>
-                        <div class="form-group">
-                            <label for="customer-address">Delivery Address</label>
-                            <textarea id="customer-address" name="customer-address" required placeholder="Flat 302, MG Road, Bengaluru"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="customer-contact">Contact Number</label>
-                            <input type="tel" id="customer-contact" name="customer-contact" required placeholder="9876543210" maxlength="10" minlength="10" pattern="[0-9]{10}" inputmode="numeric" title="Please enter exactly 10 digits">
-                        </div>
-                        <button type="submit" class="btn-primary btn-block">Place Order</button>
-                    </form>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" aria-describedby="login-error">
                 </div>
-            </div>
-            
-            <div id="empty-cart-msg" class="empty-msg">
-                <p>Your cart is currently empty.</p>
-                <button id="start-shopping-btn" class="btn-primary">Browse Restaurants</button>
-            </div>
+                <p id="login-error" class="login-error" role="alert" aria-live="polite"></p>
+                <button type="submit" class="btn-primary btn-block">Sign In</button>
+            </form>
         </section>
     </main>
 
-    <script src="script.js"></script>
+    <script src="login.js"></script>
 </body>
 </html>
