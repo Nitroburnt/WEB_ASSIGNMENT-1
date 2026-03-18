@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Food Delivery</title>
+    <title>Eatsy</title>
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3075/3075977.png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo" id="logo-link">QuickBite</div>
+        <div class="logo" id="logo-link">EATSY</div>
         <ul class="nav-links">
             <li><a href="#" id="home-link">Restaurants</a></li>
+            <li><button id="favourites-btn" class="favourites-btn">Favourites (<span id="favourites-count">0</span>)</button></li>
             <li><button id="cart-btn" class="cart-btn">Cart (<span id="cart-count">0</span>)</button></li>
         </ul>
     </nav>
@@ -20,13 +21,20 @@
         <section id="restaurants-view" class="view active">
             <div class="landing-hero">
                 <div class="landing-content">
-                    <p class="landing-badge" id="welcome-text">Welcome to QuickBite</p>
+                    <p class="landing-badge" id="welcome-text">Welcome to Eatsy</p>
                     <h1>Delicious Food Delivered Fast</h1>
                     <p class="landing-subtext">Order from your favorite restaurants and enjoy fresh meals at your doorstep.</p>
                 </div>
                 <img class="landing-image" src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=500&q=80" alt="Delicious food platter">
             </div>
             <h2>Popular Restaurants</h2>
+            <div class="restaurant-search-wrap">
+                <label for="restaurant-search" class="restaurant-search-label">Search restaurants or dishes</label>
+                <div class="restaurant-search-box">
+                    <img class="restaurant-search-icon" src="search-icon-b.svg" alt="" aria-hidden="true">
+                    <input id="restaurant-search" type="search" placeholder="Try: Pizza, Biryani, Dosa, Salad..." autocomplete="off">
+                </div>
+            </div>
             <div id="restaurants-container" class="card-grid">
             </div>
         </section>
@@ -38,8 +46,11 @@
             </div>
         </section>
 
-        <section id="cart-view" class="view">
-            <h2>Your Cart</h2>
+        <section id="cart-view" class="cart-drawer" aria-hidden="true">
+            <div class="cart-drawer-header">
+                <h2>Your Cart</h2>
+                <button id="close-cart-btn" class="close-cart-btn" aria-label="Close cart">✕</button>
+            </div>
             <div id="cart-content">
                 <div class="table-responsive">
                     <table class="cart-table">
@@ -89,6 +100,24 @@
             </div>
         </section>
     </main>
+
+    <footer class="site-footer">
+        <p>© 2026 Eatsy. All rights reserved.</p>
+        <p class="site-footer-credit">Made with <span class="footer-heart" aria-hidden="true">❤</span> by Vedanth - WEB PROGRAMMING ASSIGNMENT 1</p>
+    </footer>
+
+    <div id="favourites-overlay" class="favourites-overlay" aria-hidden="true">
+        <div class="favourites-panel" role="dialog" aria-label="Favourite items" aria-modal="true">
+            <div class="favourites-header">
+                <h3>Your Favourites</h3>
+                <button id="close-favourites-btn" class="close-favourites-btn" aria-label="Close favourites">✕</button>
+            </div>
+            <div id="favourites-list" class="favourites-list"></div>
+        </div>
+    </div>
+
+    <div id="cart-overlay" class="cart-overlay" aria-hidden="true"></div>
+    <div id="toast-notification" class="toast-notification" aria-live="polite"></div>
 
     <script src="script.js"></script>
 </body>

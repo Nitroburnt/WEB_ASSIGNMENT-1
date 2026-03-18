@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        localStorage.setItem('eatsyUsername', username);
         localStorage.setItem('quickbiteUsername', username);
         window.location.href = 'home.html';
     });

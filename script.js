@@ -3,6 +3,7 @@ const restaurants = [
         id: 1,
         name: "Pizza Paradise",
         rating: 4.8,
+        deliveryTime: "20-30 min",
         image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80",
         menu: [
             { id: 101, name: "Margherita Pizza", price: 249, image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=500&q=80" },
@@ -16,6 +17,7 @@ const restaurants = [
         id: 2,
         name: "Burger Joint",
         rating: 4.5,
+        deliveryTime: "10-15 min",
         image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80",
         menu: [
             { id: 201, name: "Classic Cheeseburger", price: 219, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80" },
@@ -79,16 +81,40 @@ const restaurants = [
     }
 ];
 
+const DELIVERY_TIME_RANGES = [
+    "10-15 min",
+    "15-20 min",
+    "20-25 min",
+    "25-30 min",
+    "30-35 min"
+];
+
+function getRandomDeliveryTime() {
+    const randomIndex = Math.floor(Math.random() * DELIVERY_TIME_RANGES.length);
+    return DELIVERY_TIME_RANGES[randomIndex];
+}
+
+restaurants.forEach((restaurant) => {
+    if (!restaurant.deliveryTime) {
+        restaurant.deliveryTime = getRandomDeliveryTime();
+    }
+});
+
 // --- State Management ---
 let cart = [];
 let currentRestaurant = null;
+let favourites = JSON.parse(localStorage.getItem('eatsyFavourites') || '[]');
+let toastTimer = null;
 
 // --- DOM Elements ---
 const views = {
     restaurants: document.getElementById('restaurants-view'),
-    menu: document.getElementById('menu-view'),
-    cart: document.getElementById('cart-view')
+    menu: document.getElementById('menu-view')
 };
+
+const cartDrawer = document.getElementById('cart-view');
+const cartOverlay = document.getElementById('cart-overlay');
+const favouritesOverlay = document.getElementById('favourites-overlay');
 
 const containers = {
     restaurants: document.getElementById('restaurants-container'),
@@ -98,15 +124,19 @@ const containers = {
 
 const elements = {
     cartCount: document.getElementById('cart-count'),
+    favouritesCount: document.getElementById('favourites-count'),
     cartTotal: document.getElementById('cart-total'),
     restaurantTitle: document.getElementById('restaurant-name-title'),
     cartContent: document.getElementById('cart-content'),
-    emptyCartMsg: document.getElementById('empty-cart-msg')
+    emptyCartMsg: document.getElementById('empty-cart-msg'),
+    favouritesList: document.getElementById('favourites-list'),
+    toast: document.getElementById('toast-notification')
 };
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     updateWelcomeMessage();
+    updateFavouritesBadge();
     renderRestaurants();
     setupEventListeners();
 });
@@ -115,17 +145,29 @@ function updateWelcomeMessage() {
     const welcomeText = document.getElementById('welcome-text');
     if (!welcomeText) return;
 
-    const username = localStorage.getItem('quickbiteUsername');
-    welcomeText.textContent = username ? `Welcome ${username}` : 'Welcome to QuickBite';
+    const username = localStorage.getItem('eatsyUsername') || localStorage.getItem('quickbiteUsername');
+    welcomeText.textContent = username ? `Welcome ${username}` : 'Welcome to Eatsy';
 }
 
 // --- Event Listeners ---
 function setupEventListeners() {
     document.getElementById('logo-link').addEventListener('click', () => switchView('restaurants'));
     document.getElementById('home-link').addEventListener('click', (e) => { e.preventDefault(); switchView('restaurants'); });
-    document.getElementById('cart-btn').addEventListener('click', () => switchView('cart'));
+    document.getElementById('favourites-btn').addEventListener('click', openFavouritesOverlay);
+    document.getElementById('close-favourites-btn').addEventListener('click', closeFavouritesOverlay);
+    favouritesOverlay.addEventListener('click', (e) => {
+        if (e.target === favouritesOverlay) closeFavouritesOverlay();
+    });
+    document.getElementById('cart-btn').addEventListener('click', toggleCartDrawer);
+    document.getElementById('close-cart-btn').addEventListener('click', closeCartDrawer);
+    cartOverlay.addEventListener('click', closeCartDrawer);
     document.getElementById('back-btn').addEventListener('click', () => switchView('restaurants'));
     document.getElementById('start-shopping-btn').addEventListener('click', () => switchView('restaurants'));
+
+    const searchInput = document.getElementById('restaurant-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', renderRestaurants);
+    }
 
     const contactInput = document.getElementById('customer-contact');
     contactInput.addEventListener('input', () => {
@@ -145,27 +187,254 @@ function setupEventListeners() {
         cart = [];
         updateCartBadge();
         refreshMenuActions();
+        closeCartDrawer();
         switchView('restaurants');
         e.target.reset();
     });
 }
 
 // --- Navigation ---
+function openFavouritesOverlay() {
+    closeCartDrawer();
+    renderFavouritesOverlay();
+    favouritesOverlay.classList.add('open');
+    favouritesOverlay.setAttribute('aria-hidden', 'false');
+}
+
+function closeFavouritesOverlay() {
+    favouritesOverlay.classList.remove('open');
+    favouritesOverlay.setAttribute('aria-hidden', 'true');
+}
+
+function openCartDrawer() {
+    closeFavouritesOverlay();
+    renderCart();
+    cartDrawer.classList.add('open');
+    cartOverlay.classList.add('open');
+    cartDrawer.setAttribute('aria-hidden', 'false');
+}
+
+function closeCartDrawer() {
+    cartDrawer.classList.remove('open');
+    cartOverlay.classList.remove('open');
+    cartDrawer.setAttribute('aria-hidden', 'true');
+}
+
+function toggleCartDrawer() {
+    if (cartDrawer.classList.contains('open')) {
+        closeCartDrawer();
+    } else {
+        openCartDrawer();
+    }
+}
+
 function switchView(viewName) {
+    closeCartDrawer();
+    closeFavouritesOverlay();
     Object.values(views).forEach(view => view.classList.remove('active'));
     views[viewName].classList.add('active');
-    
-    if (viewName === 'cart') {
-        renderCart();
-    }
 }
 
 // --- Rendering Functions ---
 
+function getRestaurantSearchState() {
+    const searchInput = document.getElementById('restaurant-search');
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    return { query, hasQuery: query.length > 0 };
+}
+
+function getMatchingDishNames(restaurant, query) {
+    return restaurant.menu
+        .filter(item => item.name.toLowerCase().includes(query))
+        .map(item => item.name);
+}
+
+function saveFavourites() {
+    localStorage.setItem('eatsyFavourites', JSON.stringify(favourites));
+}
+
+function updateFavouritesBadge() {
+    elements.favouritesCount.textContent = favourites.length;
+}
+
+function isFavourite(itemId) {
+    return favourites.includes(itemId);
+}
+
+function getFavouriteSymbol(itemId) {
+    return isFavourite(itemId) ? '❤' : '♡';
+}
+
+function findMenuItemContextById(itemId) {
+    for (const restaurant of restaurants) {
+        const item = restaurant.menu.find(menuItem => menuItem.id === itemId);
+        if (item) {
+            return { item, restaurant };
+        }
+    }
+    return null;
+}
+
+function showToast(message) {
+    if (!elements.toast) return;
+    elements.toast.textContent = message;
+    elements.toast.classList.add('show');
+
+    if (toastTimer) {
+        clearTimeout(toastTimer);
+    }
+
+    toastTimer = setTimeout(() => {
+        elements.toast.classList.remove('show');
+    }, 1800);
+}
+
+function toggleFavouriteById(itemId, event) {
+    if (event) event.stopPropagation();
+
+    const toggleButton = event && event.target ? event.target.closest('.favourite-toggle-btn') : null;
+
+    const context = findMenuItemContextById(itemId);
+    if (!context) return;
+
+    if (isFavourite(itemId)) {
+        favourites = favourites.filter(id => id !== itemId);
+    } else {
+        favourites.push(itemId);
+        showToast(`${context.item.name} added to favourites`);
+    }
+
+    saveFavourites();
+    updateFavouritesBadge();
+
+    if (toggleButton) {
+        toggleButton.classList.toggle('active', isFavourite(itemId));
+        toggleButton.textContent = getFavouriteSymbol(itemId);
+    }
+
+    refreshMenuActions();
+    renderFavouritesOverlay();
+}
+
+function removeFavouriteById(itemId, event) {
+    if (event) event.stopPropagation();
+    favourites = favourites.filter(id => id !== itemId);
+    saveFavourites();
+    updateFavouritesBadge();
+    refreshMenuActions();
+    renderFavouritesOverlay();
+}
+
+function renderFavouritesOverlay() {
+    if (!elements.favouritesList) return;
+
+    elements.favouritesList.innerHTML = '';
+
+    const columns = Math.max(1, Math.min(3, favourites.length || 1));
+    elements.favouritesList.style.setProperty('--favourites-columns', columns);
+
+    if (favourites.length === 0) {
+        elements.favouritesList.innerHTML = `
+            <div class="empty-msg" style="grid-column:1/-1;">
+                <p>No favourite items yet.</p>
+            </div>
+        `;
+        return;
+    }
+
+    favourites.forEach(itemId => {
+        const context = findMenuItemContextById(itemId);
+        if (!context) return;
+
+        const { item, restaurant } = context;
+        const card = document.createElement('div');
+        card.className = 'favourite-item-card';
+        card.innerHTML = `
+            <img src="${item.image}" alt="${item.name}">
+            <h4>${item.name}</h4>
+            <p>From ${restaurant.name}</p>
+            <p>₹${item.price.toFixed(2)}</p>
+            <div class="favourite-actions">
+                <button class="btn-primary" onclick="addToCartById(${item.id})">Add to Cart</button>
+                <button class="btn-secondary" onclick="openMenu(${restaurant.id}, event)">View</button>
+                <button class="btn-danger" onclick="removeFavouriteById(${item.id}, event)">Remove</button>
+            </div>
+        `;
+        elements.favouritesList.appendChild(card);
+    });
+}
+
 // 1. Render Restaurants
 function renderRestaurants() {
     containers.restaurants.innerHTML = '';
-    restaurants.forEach(restaurant => {
+
+    const { query, hasQuery } = getRestaurantSearchState();
+
+    const filteredRestaurants = restaurants.filter(restaurant => {
+        if (!hasQuery) return true;
+
+        const matchesRestaurantName = restaurant.name.toLowerCase().includes(query);
+        const matchesAnyDish = restaurant.menu.some(item => item.name.toLowerCase().includes(query));
+        return matchesRestaurantName || matchesAnyDish;
+    });
+
+    const matchedFoodItems = hasQuery
+        ? restaurants.flatMap(restaurant =>
+            restaurant.menu
+                .filter(item => item.name.toLowerCase().includes(query))
+                .map(item => ({ ...item, restaurantId: restaurant.id, restaurantName: restaurant.name }))
+        )
+        : [];
+
+    if (filteredRestaurants.length === 0 && matchedFoodItems.length === 0) {
+        containers.restaurants.innerHTML = `
+            <div class="empty-msg" style="width:100%;">
+                <p>No restaurants or dishes found. Try a different keyword.</p>
+            </div>
+        `;
+        return;
+    }
+
+    if (matchedFoodItems.length > 0) {
+        const foodTitle = document.createElement('div');
+        foodTitle.style.width = '100%';
+        foodTitle.style.marginBottom = '-0.7rem';
+        foodTitle.innerHTML = '<h3 style="color:#2c3e50;">Matching Dishes</h3>';
+        containers.restaurants.appendChild(foodTitle);
+
+        matchedFoodItems.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <img class="card-img" src="${item.image}" alt="${item.name}">
+                <div class="card-body">
+                    <h3 class="card-title">${item.name}</h3>
+                    <p class="card-info">From ${item.restaurantName}</p>
+                    <p class="card-price">₹${item.price.toFixed(2)}</p>
+                    <div style="margin-top:auto; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <button class="btn-primary" onclick="addToCartById(${item.id})">Add to Cart</button>
+                        <button class="btn-secondary" onclick="openMenu(${item.restaurantId}, event)">View Restaurant</button>
+                    </div>
+                </div>
+            `;
+            containers.restaurants.appendChild(card);
+        });
+    }
+
+    if (hasQuery && matchedFoodItems.length > 0 && filteredRestaurants.length > 0) {
+        const restaurantTitle = document.createElement('div');
+        restaurantTitle.style.width = '100%';
+        restaurantTitle.style.margin = '0.2rem 0 -0.7rem';
+        restaurantTitle.innerHTML = '<h3 style="color:#2c3e50;">Matching Restaurants</h3>';
+        containers.restaurants.appendChild(restaurantTitle);
+    }
+
+    filteredRestaurants.forEach(restaurant => {
+        const matchedDishes = hasQuery ? getMatchingDishNames(restaurant, query) : [];
+        const matchedDishText = matchedDishes.length
+            ? `<p class="card-info search-match">Matched dishes: ${matchedDishes.slice(0, 2).join(', ')}${matchedDishes.length > 2 ? '...' : ''}</p>`
+            : '';
+
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
@@ -173,6 +442,8 @@ function renderRestaurants() {
             <div class="card-body">
                 <h3 class="card-title">${restaurant.name}</h3>
                 <p class="card-info">⭐ ${restaurant.rating} / 5</p>
+                <p class="card-info delivery-info">⏱️ ${restaurant.deliveryTime}</p>
+                ${matchedDishText}
                 <button class="btn-primary" style="margin-top:auto;" onclick="openMenu(${restaurant.id}, event)">View Menu</button>
             </div>
         `;
@@ -191,10 +462,11 @@ function openMenu(restaurantId, event) {
     containers.menu.innerHTML = '';
     currentRestaurant.menu.forEach(item => {
         const card = document.createElement('div');
-        card.className = 'card';
+        card.className = 'card menu-card';
         card.innerHTML = `
             <img class="card-img" src="${item.image}" alt="${item.name}">
             <div class="card-body">
+                <button class="favourite-toggle-btn ${isFavourite(item.id) ? 'active' : ''}" onclick="toggleFavouriteById(${item.id}, event)" aria-label="Toggle favourite">${getFavouriteSymbol(item.id)}</button>
                 <h3 class="card-title">${item.name}</h3>
                 <p class="card-price">₹${item.price.toFixed(2)}</p>
                 <div id="menu-item-action-${item.id}" style="margin-top:auto;">
@@ -236,16 +508,21 @@ function refreshMenuActions() {
         const actionContainer = document.getElementById(`menu-item-action-${item.id}`);
         if (actionContainer) {
             actionContainer.innerHTML = getMenuActionMarkup(item.id);
+
+            const menuCardBody = actionContainer.parentElement;
+            const favouriteButton = menuCardBody ? menuCardBody.querySelector('.favourite-toggle-btn') : null;
+
+            if (favouriteButton) {
+                favouriteButton.classList.toggle('active', isFavourite(item.id));
+                favouriteButton.textContent = getFavouriteSymbol(item.id);
+            }
         }
     });
 }
 
 function findMenuItemById(itemId) {
-    for (const restaurant of restaurants) {
-        const item = restaurant.menu.find(menuItem => menuItem.id === itemId);
-        if (item) return item;
-    }
-    return null;
+    const context = findMenuItemContextById(itemId);
+    return context ? context.item : null;
 }
 
 function addToCartById(itemId) {
